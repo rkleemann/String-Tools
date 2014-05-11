@@ -1,4 +1,4 @@
-Subst
+String::Tools
 =====
 
-Simple substitution in strings
+Various tools for handling strings
