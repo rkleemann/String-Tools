@@ -4,6 +4,7 @@ use warnings;
 
 package String::Tools;
 
+
 use Exporter 'import';
 
 our @EXPORT    = qw();
@@ -31,7 +32,7 @@ sub stitch {
     my $was_blank = 1;
 
     foreach my $s (map define, @_) {
-        my $is_blank = is_blank;
+        my $is_blank = is_blank($s);
         $str .= $THREAD unless ( $was_blank || $is_blank );
         $str .= $s;
         $was_blank = $is_blank;
@@ -162,13 +163,13 @@ C<String::Tools> is a collection of tools to manipulate strings.
 
 =over
 
-=item $THREAD
+=item C<$THREAD>
 
 The default thread to use while stitching a string together.
 Defaults to a single space, C<' '>.
 Used in L</shrink( $string )> and L</stitch( @list )>.
 
-=item $BLANK
+=item C<$BLANK>
 
 The default regular expression character class to determine if a string
 component is blank.
@@ -182,26 +183,26 @@ and L</trim( $string, qr/l/, qr/r/ )>.
 
 =over
 
-=item define( $scalar )
+=item C<define( $scalar = $_ )>
 
 Returns C<$scalar> if it is defined, or the empty string if it's undefined.
 Useful in avoiding the 'Use of uninitialized value' warnings.
 C<$scalar> defaults to C<$_> if not specified.
 
-=item is_blank( $string )
+=item C<is_blank( $string = $_ )>
 
 Return true if C<$string> is blank.
 A blank C<$string> is undefined, the empty string,
 or a string that conisists entirely of L</$BLANK> characters.
 C<$string> defaults to C<$_> if not specified.
 
-=item shrink( $string )
+=item C<shrink( $string = $_ )>
 
 Combine multiple consecutive C<$BLANK> characters into one
 C<$THREAD> character throughout C<$string>.
 C<$string> defaults to C<$_> if not specified.
 
-=item stitch( @list )
+=item C<stitch( @list )>
 
 Stitch together the elements of list with L</$THREAD>.
 If an item in C<@list> is blank (as measured by L</is_blank( $string )>),
@@ -226,12 +227,12 @@ This approach is more intuitive than C<join>:
  say stitch( ' ' => $user, qw( home dir is /home/ ), '', $user );
  # "$user home dir is /home/$user"
 
-=item stitcher( $thread => @list )
+=item C<< stitcher( $thread => @list ) >>
 
 Stitch together the elements of list with C<$thread> in place of
 L</$THREAD>.
 
-=item subst( $string, %variables )
+=item C<< subst( $string, %variables = ( _ => $_ ) ) >>
 
 Take in C<$string>, and do a search and replace of all the variables named in
 C<%variables> with the associated values.
@@ -251,7 +252,7 @@ are simply ignored and left as is.
 
 Returns the string with substitutions made.
 
-=item trim( $string, qr/l/, qr/r/ )
+=item C<trim( $string, qr/l/ = qr/$BLANK+/, qr/r/ = $l )>
 
 Trim C<string> of leading and trailing characters.
 C<$string> defaults to C<$_> if not specified.
