@@ -51,11 +51,11 @@ is subst( $string ),                        'x is $x, y is ${ y }, _ is 4',
 # trim
 is trim('  stretched  string '),                'stretched  string',
     'trim default';
-is trim('  stretched  string ', qr/ /, ''),     ' stretched  string ',
+is trim('  stretched  string ', qr/ /,     ''), ' stretched  string ',
     'trim left';
-is trim('  stretched  string ', '', qr/ /),     '  stretched  string',
+is trim('  stretched  string ',     '', qr/ /), '  stretched  string',
     'trim right';
-is trim('  stretched  string ', qr/ +/, qr/ /), 'stretched  string',
+is trim('  stretched  string ', qr/ /, qr/ +/), ' stretched  string',
     'trim both';
 
 done_testing;
