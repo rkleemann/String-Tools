@@ -17,17 +17,18 @@ sub define(_) { return $_[0] // '' }
 
 sub is_blank(_) {
     local $_ = shift;
-    return 1 if not defined;
-    return /\A$BLANK*\z/;
+    return 1 unless defined() && length();
+    return /\A$BLANK+\z/;
 }
 
-sub shrink {
-    local $_ = trim(@_ ? shift : $_);
+sub shrink(_) {
+    local $_ = trim(shift);
     s/$BLANK+/$THREAD/g if defined;
     return $_;
 }
 
 sub stitch {
+    local $_;
     my $str = '';
     my $was_blank = 1;
 
@@ -59,6 +60,7 @@ sub subst {
     } else { %subst = @_ }
 
     if (%subst) {
+        local $_;
         my $names = join( '|', map quotemeta, grep length, sort keys %subst );
         $str =~ s[\$(?:\{\s*($names)\s*\}|($names)\b)]
                  [$subst{ $1 // $2 }]g;
