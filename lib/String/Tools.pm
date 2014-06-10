@@ -3,111 +3,7 @@ use v5.12;
 use warnings;
 
 package String::Tools;
-
-
-use Exporter 'import';
-
-our @EXPORT    = qw();
-our @EXPORT_OK = qw(define is_blank shrink stitch stitcher subst trim);
-
-our $THREAD = ' ';
-our $BLANK  = '[[:cntrl:][:space:]]';
-
-sub define(_) { return $_[0] // '' }
-
-sub is_blank(_) {
-    local $_ = shift;
-    return 1 unless defined() && length();
-    return /\A$BLANK+\z/;
-}
-
-sub shrink(_) {
-    local $_ = trim(shift);
-    s/$BLANK+/$THREAD/g if defined;
-    return $_;
-}
-
-sub stitch {
-    local $_;
-    my $str = '';
-    my $was_blank = 1;
-
-    foreach my $s (map define, @_) {
-        my $is_blank = is_blank($s);
-        $str .= $THREAD unless ( $was_blank || $is_blank );
-        $str .= $s;
-        $was_blank = $is_blank;
-    }
-
-    return $str;
-}
-
-sub stitcher {
-    local $THREAD = shift // $THREAD;
-    return &stitch;
-}
-
-sub subst {
-    my $str  = shift;
-    @_ = ( $_ ) if defined($_) && ! @_;
-
-    my %subst;
-    if ( 1 == @_ ) {
-        my $ref = ref $_[0];
-        if    ( $ref eq 'HASH' )  { %subst = %{ +shift }     }
-        elsif ( $ref eq 'ARRAY' ) { %subst = @{ +shift }     }
-        else                      { %subst = ( _ => +shift ) }
-    } else { %subst = @_ }
-
-    if (%subst) {
-        local $_;
-        my $names = join( '|', map quotemeta, grep length, sort keys %subst );
-        $str =~ s[\$(?:\{\s*($names)\s*\}|($names)\b)]
-                 [$subst{ $1 // $2 }]g;
-    }
-
-    return $str;
-}
-
-sub trim {
-    local $_ = @_ ? shift : $_;
-    return $_ unless defined;
-
-    my ( $lead, $rear );
-    my $count = scalar @_;
-    if    ($count == 0) {}
-    elsif ($count == 1) { $lead = shift; }
-    else {
-        # Could be:
-        #   1. l => $value
-        #   2. r => $value
-        #   3. l => $value, r => $value
-        #   or r => $value, l => $value
-        #   4. $lead, $rear
-        my %lr = @_;
-        $lead = delete $lr{l} if exists $lr{l};
-        $rear = delete $lr{r} if exists $lr{r};
-        # At this point, there should be nothing in %lr,
-        # so if there is, then this must be case 4.
-        ( $lead, $rear ) = @_ if %lr;
-    }
-
-    $lead //= $BLANK . '+';
-    s/\A$lead// if ( length $lead );
-
-    $rear //= $lead;
-    s/$rear\z// if ( length $rear );
-
-    return $_;
-}
-
-1;
-
-__DATA__
-
-=head1 NAME
-
-String::Tools - Various tools for handling strings.
+# ABSTRACT: Various tools for handling strings.
 
 =head1 SYNOPSIS
 
@@ -161,17 +57,24 @@ String::Tools - Various tools for handling strings.
 
 C<String::Tools> is a collection of tools to manipulate strings.
 
-=head2 Variables
+=cut
 
-=over
+use Exporter 'import';
 
-=item C<$THREAD>
+our @EXPORT    = qw();
+our @EXPORT_OK = qw(define is_blank shrink stitch stitcher subst trim);
+
+=var C<$THREAD>
 
 The default thread to use while stitching a string together.
 Defaults to a single space, C<' '>.
 Used in L</shrink( $string = $_ )> and L</stitch( @list )>.
 
-=item C<$BLANK>
+=cut
+
+our $THREAD = ' ';
+
+=var C<$BLANK>
 
 The default regular expression character class to determine if a string
 component is blank.
@@ -181,34 +84,53 @@ L</is_blank( $string = $_ )>,
 L</shrink( $string = $_ )>,
 L</stitch( @list )>,
 and
-L</trim( $string, qrE<sol>lE<sol> = qrE<sol>$BLANK+E<sol>, qrE<sol>rE<sol> = $l )>.
+L</trim( $string = $_ ; $l = qrE<sol>$BLANK+E<sol> ; $r = $l )>.
 
-=back
+=cut
 
-=head2 Functions
+our $BLANK  = '[[:cntrl:][:space:]]';
 
-=over
-
-=item C<define( $scalar = $_ )>
+=func C<define( $scalar = $_ )>
 
 Returns C<$scalar> if it is defined, or the empty string if it's undefined.
 Useful in avoiding the 'Use of uninitialized value' warnings.
 C<$scalar> defaults to C<$_> if not specified.
 
-=item C<is_blank( $string = $_ )>
+=cut
+
+sub define(_) { return $_[0] // '' }
+
+=func C<is_blank( $string = $_ )>
 
 Return true if C<$string> is blank.
 A blank C<$string> is undefined, the empty string,
 or a string that conisists entirely of L</$BLANK> characters.
 C<$string> defaults to C<$_> if not specified.
 
-=item C<shrink( $string = $_ )>
+=cut
 
-Combine multiple consecutive C<$BLANK> characters into one
+sub is_blank(_) {
+    local $_ = shift;
+    return 1 unless defined() && length();
+    return /\A$BLANK+\z/;
+}
+
+=func C<shrink( $string = $_ )>
+
+Trim C<$BLANK> characters from that lead and rear of C<$string>,
+then combine multiple consecutive C<$BLANK> characters into one
 C<$THREAD> character throughout C<$string>.
 C<$string> defaults to C<$_> if not specified.
 
-=item C<stitch( @list )>
+=cut
+
+sub shrink(_) {
+    local $_ = trim(shift);
+    s/$BLANK+/$THREAD/g if defined;
+    return $_;
+}
+
+=func C<stitch( @list )>
 
 Stitch together the elements of list with L</$THREAD>.
 If an item in C<@list> is blank (as measured by L</is_blank( $string = $_ )>),
@@ -222,7 +144,7 @@ This approach is more intuitive than C<join>:
  say   join( ' ' => qw( Can anybody hear? ) );
  # "1 2 3 ...\nCan anybody hear?"
  #
- say stitch( ' ' => qw( 1 2 3 ... ), "\n", qw( Can anybody hear? ) );
+ say stitch( qw( 1 2 3 ... ), "\n", qw( Can anybody hear? ) );
  # "1 2 3 ...\nCan anybody hear?"
 
  say   join( ' ' => $user, qw( home dir is /home/ ),     $user );
@@ -230,15 +152,45 @@ This approach is more intuitive than C<join>:
  say   join( ' ' => $user, qw( home dir is /home/ ) ) .  $user;
  # "$user home dir is /home/$user"
  #
- say stitch( ' ' => $user, qw( home dir is /home/ ), '', $user );
+ say stitch( $user, qw( home dir is /home/ ), '', $user );
  # "$user home dir is /home/$user"
 
-=item C<< stitcher( $thread => @list ) >>
+=cut
 
-Stitch together the elements of list with C<$thread> in place of
+sub stitch {
+    local $_;
+    my $str = '';
+    my $was_blank = 1;
+
+    foreach my $s (map define, @_) {
+        my $is_blank = is_blank($s);
+        $str .= $THREAD unless ( $was_blank || $is_blank );
+        $str .= $s;
+        $was_blank = $is_blank;
+    }
+
+    return $str;
+}
+
+=func C<< stitcher( $thread => @list ) >>
+
+Stitch together the elements of C<@list> with C<$thread> in place of
 L</$THREAD>.
 
-=item C<< subst( $string, %variables = ( _ => $_ ) ) >>
+ say stitcher( ' ' => qw( 1 2 3 ... ), "\n", qw( Can anybody hear? ) );
+ # "1 2 3 ...\nCan anybody hear?"
+
+ say stitcher( ' ' => $user, qw( home dir is /home/ ), '', $user );
+ # "$user home dir is /home/$user"
+
+=cut
+
+sub stitcher {
+    local $THREAD = shift // $THREAD;
+    return &stitch;
+}
+
+=func C<< subst( $string ; %variables = ( _ => $_ ) ) >>
 
 Take in C<$string>, and do a search and replace of all the variables named in
 C<%variables> with the associated values.
@@ -258,7 +210,31 @@ are simply ignored and left as is.
 
 Returns the string with substitutions made.
 
-=item C<trim( $string, qr/l/ = qr/$BLANK+/, qr/r/ = $l )>
+=cut
+
+sub subst {
+    my $str  = shift;
+    @_ = ( $_ ) if defined($_) && ! @_;
+
+    my %subst;
+    if ( 1 == @_ ) {
+        my $ref = ref $_[0];
+        if    ( $ref eq 'HASH' )  { %subst = %{ +shift }     }
+        elsif ( $ref eq 'ARRAY' ) { %subst = @{ +shift }     }
+        else                      { %subst = ( _ => +shift ) }
+    } else { %subst = @_ }
+
+    if (%subst) {
+        local $_;
+        my $names = join( '|', map quotemeta, grep length, sort keys %subst );
+        $str =~ s[\$(?:\{\s*($names)\s*\}|($names)\b)]
+                 [$subst{ $1 // $2 }]g;
+    }
+
+    return $str;
+}
+
+=func C<trim( $string = $_ ; $l = qr/$BLANK+/ ; $r = $l )>
 
 Trim C<string> of leading and trailing characters.
 C<$string> defaults to C<$_> if not specified.
@@ -283,19 +259,47 @@ corresponding parameter to the empty string C<''>.
  say trim('  This is a test!!', r => qr/[.?!]+/, l => qr/\s+/);
  # 'This is a test'
 
-=back
+=cut
 
-=head1 BUGS
+sub trim {
+    local $_ = @_ ? shift : $_;
+    return $_ unless defined;
 
-None known.
+    my ( $lead, $rear );
+    my $count = scalar @_;
+    if    ($count == 0) {}
+    elsif ($count == 1) { $lead = shift; }
+    else {
+        # Could be:
+        #   1. l => $value
+        #   2. r => $value
+        #   3. l => $value, r => $value
+        #   or r => $value, l => $value
+        #   4. $lead, $rear
+        my %lr = @_;
+        $lead = delete $lr{l} if exists $lr{l};
+        $rear = delete $lr{r} if exists $lr{r};
+        # At this point, there should be nothing in %lr,
+        # so if there is, then this must be case 4.
+        ( $lead, $rear ) = @_ if %lr;
+    }
+
+    $lead //= $BLANK . '+';
+    s/\A$lead// if ( length $lead );
+
+    $rear //= $lead;
+    s/$rear\z// if ( length $rear );
+
+    return $_;
+}
+
+1;
+
+__END__
 
 =head1 TODO
 
 Nothing?
-
-=head1 AUTHOR
-
-Bob Kleemann
 
 =head1 SEE ALSO
 
