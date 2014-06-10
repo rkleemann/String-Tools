@@ -4,6 +4,7 @@ use warnings;
 
 package String::Tools;
 # ABSTRACT: Various tools for handling strings.
+# VERSION
 
 =head1 SYNOPSIS
 
