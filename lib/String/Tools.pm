@@ -99,7 +99,7 @@ C<$scalar> defaults to C<$_> if not specified.
 
 =cut
 
-sub define(_) { return $_[0] // '' }
+sub define(_) { return $_[0] // !!$_[0] }
 
 =func C<is_blank( $string = $_ )>
 
