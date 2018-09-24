@@ -1,6 +1,8 @@
 Revision history for String::Tools.
 
 {{$NEXT}}
+ - Change define to a defined value by `!!` it
+ - Added/improved several tests
 
 0.14.163  2014-06-12
 
