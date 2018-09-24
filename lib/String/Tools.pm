@@ -93,13 +93,16 @@ our $BLANK  = '[[:cntrl:][:space:]]';
 
 =func C<define( $scalar = $_ )>
 
-Returns C<$scalar> if it is defined, or the empty string if it's undefined.
+Returns C<$scalar> if it is defined,
+or a defined but false value (which works in a numeric or string context)
+if it's undefined.
 Useful in avoiding the 'Use of uninitialized value' warnings.
 C<$scalar> defaults to C<$_> if not specified.
 
 =cut
 
-sub define(_) { return $_[0] // !!$_[0] }
+sub DEFINE()  { !!undef }
+sub define(_) { return $_[0] // DEFINE() }
 
 =func C<is_blank( $string = $_ )>
 
