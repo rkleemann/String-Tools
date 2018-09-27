@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 37;
+use Test::More tests => 38;
 
 ok require String::Tools, 'Require String::Tools';
 
@@ -106,3 +106,4 @@ is trim_lines($multi_line_string),
     "This is a multi-line string.\n"
     . "It should have several things to clear up.",
     'Many lines were trimmed';
+
