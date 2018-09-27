@@ -3,7 +3,7 @@ use v5.12;
 use warnings;
 
 package String::Tools;
-# ABSTRACT: Various tools for handling strings.
+# ABSTRACT: Various tools for manipulating strings.
 # VERSION
 
 =head1 SYNOPSIS
@@ -139,8 +139,7 @@ C<$scalar> defaults to C<$_> if not specified.
 
 =cut
 
-sub DEFINE()  { !!undef }
-sub define(_) { return $_[0] // DEFINE() }
+sub define(_) { return $_[0] // !!undef }
 
 =func C<is_blank( $string = $_ )>
 
@@ -300,7 +299,7 @@ matched at the end of the string.
 If you don't want to trim the start or end of a string, set the
 corresponding parameter to the empty string C<''>.
 
- say map trim, @strings;
+ say foreach map trim, @strings;
 
  say trim('  This is a test  ')
  # 'This is a test'
