@@ -72,17 +72,18 @@ C<String::Tools> is a collection of tools to manipulate strings.
 use Exporter 'import';
 
 our @EXPORT    = qw();
-our @EXPORT_OK = qw(define is_blank shrink stitch stitcher subst trim);
+our @EXPORT_OK = qw(
+    define
+    is_blank
+    shrink
+    stitch
+    stitcher
+    subst
+    trim
+    trim_lines
+);
 
-=var C<$THREAD>
-
-The default thread to use while stitching a string together.
-Defaults to a single space, C<' '>.
-Used in L</shrink( $string = $_ )> and L</stitch( @list )>.
-
-=cut
-
-our $THREAD = ' ';
+### Variables ###
 
 =var C<$BLANK>
 
@@ -99,6 +100,34 @@ L</trim( $string = $_ ; $l = qrE<sol>$BLANK+E<sol> ; $r = $l )>.
 =cut
 
 our $BLANK  = '[[:cntrl:][:space:]]';
+
+=var C<$SUBST_VAR>
+
+The regular expression for the
+L<< /subst( $string ; %variables = ( _ => $_ ) ) >> function.
+Starts with an alphabetic or underscore character, continues with any number
+of word characters, and then is followed by any number of subpatterns that
+begin with a single punctuation character and is followed by one or more
+word characters.
+
+If you want to change it for a particular use, it is highly recomended
+that you C<local>'ize your change.
+
+=cut
+
+our $SUBST_VAR = qr/[[:alpha:]_]+\w*(?:[[:punct:]]\w+)*/;
+
+=var C<$THREAD>
+
+The default thread to use while stitching a string together.
+Defaults to a single space, C<' '>.
+Used in L</shrink( $string = $_ )> and L</stitch( @list )>.
+
+=cut
+
+our $THREAD = ' ';
+
+### Functions ###
 
 =func C<define( $scalar = $_ )>
 
@@ -221,6 +250,9 @@ Only names which are in C<%variables> will be replaced.  This means that
 substitutions that are in C<$string> which are not mentioned in C<%variables>
 are simply ignored and left as is.
 
+The names in C<%variables> to be replaced in C<$string> must follow a pattern.
+The pattern is available in variable L</C<$SUBST_VAR>>.
+
 Returns the string with substitutions made.
 
 =cut
@@ -239,8 +271,15 @@ sub subst {
 
     if (%subst) {
         local $_;
-        my $names = join( '|', map quotemeta, grep length, sort keys %subst );
-        $str =~ s[\$(?:\{\s*($names)\s*\}|($names)\b)]
+        my $names = '(?:'
+            . join( '|',
+                map quotemeta,
+                    sort { length($b) <=> length($a) || $a cmp $b }
+                        grep { length() && /\A$SUBST_VAR\z/ }
+                            keys %subst
+            )
+            . ')\b';
+        $str =~ s[\$(?:\{\s*($names)\s*\}|($names))]
                  [$subst{ $1 // $2 }]g;
     }
 
