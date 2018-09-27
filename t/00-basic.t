@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 38;
+use Test::More tests => 40;
 
 ok require String::Tools, 'Require String::Tools';
 
@@ -34,6 +34,7 @@ is define(''),    '', 'define works on empty';
 is define(0),      0, 'define works on 0';
 
 # is_blank (only tests within ASCII)
+ok is_blank($String::Tools::THREAD), '$THREAD is blank';
 ok is_blank(undef),                    'undef is blank';
 ok is_blank(''),                       'empty is blank';
 ok is_blank(' '),                      'space is blank';
@@ -44,9 +45,10 @@ ok is_blank(" \n \t \0"), 'many blank things are blank';
 ok is_blank( join( '' => map chr, 0 .. 0x20, 0x7f ) ),
     'all blank things are blank';
 
-ok !is_blank(0),             '0 is not blank';
-ok !is_blank('0'),         '"0" is not blank';
-ok !is_blank('blank'), '"blank" is not blank';
+ok !is_blank($String::Tools::BLANK), '$BLANK is not blank';
+ok !is_blank(0),                          '0 is not blank';
+ok !is_blank('0'),                      '"0" is not blank';
+ok !is_blank('blank'),              '"blank" is not blank';
 
 # shrink
 is shrink('  stretched  string  '), 'stretched string', 'shrink shrunk';
