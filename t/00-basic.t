@@ -15,6 +15,7 @@ my @import = qw(
     stitcher
     subst
     trim
+    trim_lines
 );
 can_ok( 'String::Tools' => @import );
 String::Tools->import(@import);    # I wish this returned a true value
@@ -97,3 +98,11 @@ is trim( '  stretched  string  ', l => qr/ /, r => qr/ +/ ),
     ' stretched  string',
     'trim both with l => and r =>';
 
+my $multi_line_string = <<END_STRING;
+    This is a multi-line string. \t
+\tIt should have several things to clear up. \n
+END_STRING
+is trim_lines($multi_line_string),
+    "This is a multi-line string.\n"
+    . "It should have several things to clear up.",
+    'Many lines were trimmed';

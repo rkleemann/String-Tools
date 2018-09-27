@@ -8,7 +8,16 @@ package String::Tools;
 
 =head1 SYNOPSIS
 
- use String::Tools qw(define is_blank shrink stitch stitcher subst trim);
+ use String::Tools qw(
+    define
+    is_blank
+    shrink
+    stitch
+    stitcher
+    subst
+    trim
+    trim_lines
+ );
 
  my $val = define undef; # ''
 
@@ -293,6 +302,54 @@ sub trim {
 
     $rear //= $lead;
     s/$rear\z// if ( length $rear );
+
+    return $_;
+}
+
+=func C<trim_lines( $string = $_ ; $l = qr/$BLANK+/ ; $r = $l )>
+
+Similar to L</trim( $string = $_ ; $l = qr/$BLANK+/ ; $r = $l )>,
+except it does it for each line in a string, not just the start
+and end of a string.
+
+ say trim_lines("\t This \n\n \t is \n\n \t a \n\n \t test \t\n\n")
+ # "This\nis\na\ntest"
+
+ say trim_lines( "\t\tThis\n\t\tis\n\t\ta\n\t\ttest", qr/\t/ );
+ # "\tThis\n\tis\n\ta\n\ttest"
+
+Since v0.18.270.
+
+=cut
+
+sub trim_lines {
+    local $_ = @_ ? shift : $_;
+    return $_ unless defined;
+
+    my ( $lead, $rear );
+    my $count = scalar @_;
+    if    ($count == 0) {}
+    elsif ($count == 1) { $lead = shift; }
+    else {
+        # Could be:
+        #   1. l => $value
+        #   2. r => $value
+        #   3. l => $value, r => $value
+        #   or r => $value, l => $value
+        #   4. $lead, $rear
+        my %lr = @_;
+        $lead = delete $lr{l} if exists $lr{l};
+        $rear = delete $lr{r} if exists $lr{r};
+        # At this point, there should be nothing in %lr,
+        # so if there is, then this must be case 4.
+        ( $lead, $rear ) = @_ if %lr;
+    }
+
+    $lead //= $BLANK . '+';
+    s/^$lead//gm if ( length $lead );
+
+    $rear //= $lead;
+    s/$rear$//gm if ( length $rear );
 
     return $_;
 }
