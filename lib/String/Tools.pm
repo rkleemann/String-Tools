@@ -14,7 +14,9 @@ package String::Tools;
     shrink
     stitch
     stitcher
+    stringify
     subst
+    subst_vars
     trim
     trim_lines
  );
@@ -78,7 +80,9 @@ our @EXPORT_OK = qw(
     shrink
     stitch
     stitcher
+    stringify
     subst
+    subst_vars
     trim
     trim_lines
 );
@@ -129,6 +133,8 @@ our $THREAD = ' ';
 
 ### Functions ###
 
+sub stringify(_);    # Forward declaration
+
 =func C<define( $scalar = $_ )>
 
 Returns C<$scalar> if it is defined,
@@ -151,9 +157,8 @@ C<$string> defaults to C<$_> if not specified.
 =cut
 
 sub is_blank(_) {
-    local $_ = shift;
-    return 1 unless defined() && length();
-    return /\A$BLANK+\z/;
+    local $_ = &stringify;
+    return not( length() && !/\A$BLANK+\z/ );
 }
 
 =func C<shrink( $string = $_ )>
@@ -166,8 +171,8 @@ C<$string> defaults to C<$_> if not specified.
 =cut
 
 sub shrink(_) {
-    local $_ = trim(shift);
-    s/$BLANK+/$THREAD/g if defined;
+    local $_ = trim(&stringify);
+    s/$BLANK+/$THREAD/g;
     return $_;
 }
 
@@ -199,11 +204,11 @@ This approach is more intuitive than C<join>:
 =cut
 
 sub stitch {
-    local $_;
-    my $str = '';
+    my $str       = '';
     my $was_blank = 1;
 
-    foreach my $s (map define, @_) {
+    local $_;
+    foreach my $s (map stringify, @_) {
         my $is_blank = is_blank($s);
         $str .= $THREAD unless ( $was_blank || $is_blank );
         $str .= $s;
@@ -229,6 +234,51 @@ L</$THREAD>.
 sub stitcher {
     local $THREAD = shift // $THREAD;
     return &stitch;
+}
+
+=func C<stringify( $scalar = $_ )>
+
+Return an intelligently stringified version of C<$scalar>.
+Attempts to avoid returning a string that has the reference name
+and a hexadecimal number:
+C<ARRAY(0xdeadbeef)>, C<My::Package=HASH(0xdeadbeef)>.
+
+If C<$scalar> is undefined,
+returns the result from L</define( $scalar = $_ )>.
+If C<$scalar> is not a reference,
+returns $scalar.
+If C<$scalar> is a reference to an C<ARRAY>,
+returns the stringification of that array (via C<"@$scalar">).
+If C<$scalar> is a reference to a C<HASH>,
+returns the stringification of that hash (via C<"@{[%$scalar]}">).
+If C<$scalar> is a reference to a C<SCALAR>,
+calls itself as C<stringify($$scalar)>.
+If C<$scalar> is a reference that is not one of the previously mentioned,
+returns the default stringification (via C<"$scalar">).
+
+Since v0.18.277
+
+=cut
+
+sub stringify(_) {
+    local ($_) = @_;
+
+    if ( not defined() ) {
+        return define();
+    } elsif ( not( my $ref = ref() ) ) {
+        return $_;
+    } elsif ( $ref eq 'ARRAY' ) {
+        return "@$_";
+        #return join( $" // ' ', map stringify, @$_ );    # What about loops?
+    } elsif ( $ref eq 'HASH' ) {
+        return "@{[%$_]}";
+        #return join( $" // ' ', map stringify, %$_ );    # What about loops?
+    } elsif ( $ref eq 'REF' && ref($$_) ne 'REF' ) {
+        return stringify($$_);
+    } elsif ( $ref eq 'SCALAR' ) {
+        return stringify($$_);
+    }
+    return "$_";
 }
 
 =func C<< subst( $string ; %variables = ( _ => $_ ) ) >>
@@ -257,15 +307,15 @@ Returns the string with substitutions made.
 =cut
 
 sub subst {
-    my $str  = shift;
+    my $str  = stringify( shift );
     @_ = ( $_ ) if defined($_) && ! @_;
 
     my %subst;
     if ( 1 == @_ ) {
-        my $ref = ref $_[0];
-        if    ( $ref eq 'HASH' )  { %subst = %{ +shift }     }
-        elsif ( $ref eq 'ARRAY' ) { %subst = @{ +shift }     }
-        else                      { %subst = ( _ => +shift ) }
+        if ( not( my $ref = ref $_[0] ) ) { %subst = ( _ => +shift ) }
+        elsif ( $ref eq 'ARRAY' )         { %subst = @{ +shift }     }
+        elsif ( $ref eq 'HASH' )          { %subst = %{ +shift }     }
+        else                              { %subst = ( _ => +shift ) }
     } else { %subst = @_ }
 
     if (%subst) {
@@ -279,10 +329,31 @@ sub subst {
             )
             . ')\b';
         $str =~ s[\$(?:\{\s*($names)\s*\}|($names))]
-                 [$subst{ $1 // $2 }]g;
+                 [ stringify( $subst{ $1 // $2 } ) ]eg;
     }
 
     return $str;
+}
+
+=func C<subst_vars( $string = $_ )>
+
+Search C<$string> for things that look like variables to be substituted.
+
+Returns the unique list of variable names found, without the leading
+C<$> or surrounding C<{}>.
+
+ my $string = 'Name is $name, age is $age, birthday is ${ birthday }';
+ my @vars = subst_vars($string);    # 'name', 'age', 'birtday'
+
+=cut
+
+sub subst_vars(_) {
+    local ($_) = &stringify;
+
+    my @vars = /\$(\{\s*$SUBST_VAR\s*\}|$SUBST_VAR\b)/g;
+    my %seen = ();
+    return grep { !$seen{$_}++ }
+        map { trim( $_, qr/\{\s*/, qr/\s*\}/ ) } @vars;
 }
 
 =func C<trim( $string = $_ ; $l = qr/$BLANK+/ ; $r = $l )>
@@ -313,8 +384,7 @@ corresponding parameter to the empty string C<''>.
 =cut
 
 sub trim {
-    local $_ = @_ ? shift : $_;
-    return $_ unless defined;
+    local $_ = stringify( @_ ? shift : $_ );
 
     my ( $lead, $rear );
     my $count = scalar @_;
@@ -361,8 +431,7 @@ Since v0.18.270.
 =cut
 
 sub trim_lines {
-    local $_ = @_ ? shift : $_;
-    return $_ unless defined;
+    local $_ = stringify( @_ ? shift : $_ );
 
     my ( $lead, $rear );
     my $count = scalar @_;

@@ -2,13 +2,18 @@ Revision history for String::Tools.
 
 {{$NEXT}}
 
+ - Added stringify(), to attempt to convert things to a string in a
+   sensible way.
+ - Added subst_vars(), to retrieve the variables in a string.
+ - Updated and added several tests.
+
 v0.18.270 2018-09-27
 
- - Change `define` to a defined value by using the constant `!!undef`
+ - Change define() to a defined value by using the constant !!undef
    (Which causes it work in both the string and numeric contexts correctly).
  - Added/improved several tests.
- - Added the `$SUBST_VAR` variable for the `subst()` function.
- - Added the `trim_lines()` function.
+ - Added the $SUBST_VAR variable for the subst() function.
+ - Added the trim_lines() function.
 
 0.14.163  2014-06-12
 
