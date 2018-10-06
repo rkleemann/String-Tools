@@ -80,8 +80,9 @@ is stitcher( '=',  '', "\n", "\0"), "\n\0",    'stitcher blanks';
 is stitcher( '!!', 'a', '', 'b'),   'ab',      'stitcher letters';
 
 # stringify
-is stringify(undef),   '',       'undef stringifies properly';
+is stringify(undef),         '', 'undef stringifies properly';
 is stringify(123_456), '123456', 'number stringifies properly';
+is stringify( [] ),          '', 'Empty array stringifies properly';
 is stringify( \@import ),
     stitch(qw(
         define
@@ -96,18 +97,19 @@ is stringify( \@import ),
         trim_lines
     )),
     'Array stringifies properly';
+is stringify( {} ),            '', 'Empty hash stringifies properly';
 is stringify( { a => 1 } ), 'a 1', 'Hash stringifies properly';
-is stringify( [] ), '', 'Empty array stringifies properly';
-is stringify( {} ), '', 'Empty hash stringifies properly';
 {
     my $object = bless( {}, 'Foo' );
     like stringify($object), qr/\AFoo\=HASH\(0x[[:xdigit:]]+\)\z/,
         'Un-overloaded object stringifies properly';
-    eval <<END_FOO;
-package Foo;
-use overload '""' => sub { 'Foo is an object' };
-END_FOO
-    is stringify($object), 'Foo is an object',
+
+    eval <<END_BAR;
+    package Bar;
+    use overload '""' => sub { __PACKAGE__ . ' is an object' };
+END_BAR
+    my $bar = bless( {}, 'Bar' );
+    is stringify($bar), 'Bar is an object',
         'An overloaded object stringifies properly';
 }
 
