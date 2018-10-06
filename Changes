@@ -2,6 +2,10 @@ Revision history for String::Tools.
 
 {{$NEXT}}
 
+ - Updated some tests to pass on older Perls.
+
+0.18.277  2018-10-04
+
  - Added stringify(), to attempt to convert things to a string in a
    sensible way.
  - Added subst_vars(), to retrieve the variables in a string.
