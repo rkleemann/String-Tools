@@ -251,6 +251,9 @@ If C<$scalar> is a reference to an C<ARRAY>,
 returns the stringification of that array (via C<"@$scalar">).
 If C<$scalar> is a reference to a C<HASH>,
 returns the stringification of that hash (via C<"@{[%$scalar]}">).
+If C<$scalar> is a reference to a C<REF>,
+and C<$$scalar> is not reference to a C<REF>,
+calls itself as C<stringify($$scalar)>.
 If C<$scalar> is a reference to a C<SCALAR>,
 calls itself as C<stringify($$scalar)>.
 If C<$scalar> is a reference that is not one of the previously mentioned,
@@ -263,22 +266,16 @@ Since v0.18.277
 sub stringify(_) {
     local ($_) = @_;
 
-    if ( not defined() ) {
-        return define();
-    } elsif ( not( my $ref = ref() ) ) {
-        return $_;
-    } elsif ( $ref eq 'ARRAY' ) {
-        return "@$_";
-        #return join( $" // ' ', map stringify, @$_ );    # What about loops?
-    } elsif ( $ref eq 'HASH' ) {
-        return "@{[%$_]}";
-        #return join( $" // ' ', map stringify, %$_ );    # What about loops?
-    } elsif ( $ref eq 'REF' && ref($$_) ne 'REF' ) {
-        return stringify($$_);
-    } elsif ( $ref eq 'SCALAR' ) {
-        return stringify($$_);
-    }
-    return "$_";
+    return not( defined() ) ? define() : do {
+        my $ref = ref();
+         !$ref                               ?            $_
+        : $ref eq 'ARRAY'                    ?          "@$_"
+        : $ref eq 'HASH'                     ?       "@{[%$_]}"
+        : $ref eq 'REF' && ref($$_) ne 'REF' ? stringify($$_)
+        : $ref eq 'SCALAR'                   ? stringify($$_)
+        :                                                "$_"
+        ;
+    };
 }
 
 =func C<< subst( $string ; %variables = ( _ => $_ ) ) >>
@@ -471,5 +468,7 @@ Nothing?
 
 =head1 SEE ALSO
 
-L<perlfunc/join>, Any templating system.
+C<stitch> is similar to L<perlfunc/join>.
+
+C<subst> is similar to any templating system.
 

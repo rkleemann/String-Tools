@@ -2,6 +2,12 @@ Revision history for String::Tools.
 
 {{$NEXT}}
 
+ - Updated the documentation.
+ - Changed stringify() from a long chain of "if ... elsif ..."
+   to the equivalent trinaries "... ? ... : ... ? ..."
+
+0.18.279  2018-10-06
+
  - Updated some tests to pass on older Perls.
 
 0.18.277  2018-10-04
