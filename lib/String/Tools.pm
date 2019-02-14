@@ -4,7 +4,6 @@ use warnings;
 
 package String::Tools;
 # ABSTRACT: Various tools for manipulating strings.
-# VERSION
 
 =head1 SYNOPSIS
 
@@ -306,14 +305,14 @@ Returns the string with substitutions made.
 sub subst {
     my $str  = stringify( shift );
     @_ = ( $_ ) if defined($_) && ! @_;
-
-    my %subst;
-    if ( 1 == @_ ) {
-        if ( not( my $ref = ref $_[0] ) ) { %subst = ( _ => +shift ) }
-        elsif ( $ref eq 'ARRAY' )         { %subst = @{ +shift }     }
-        elsif ( $ref eq 'HASH' )          { %subst = %{ +shift }     }
-        else                              { %subst = ( _ => +shift ) }
-    } else { %subst = @_ }
+    my %subst = 1 == @_ ? do {
+            my $ref = ref( $_[0] );
+              not($ref)       ? ( _ => +shift )
+            : $ref eq 'ARRAY' ? @{ +shift }
+            : $ref eq 'HASH'  ? %{ +shift }
+            :                   ( _ => +shift );
+        }
+        : @_;
 
     if (%subst) {
         local $_;
